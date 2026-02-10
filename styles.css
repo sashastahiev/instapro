@@ -196,3 +196,51 @@
   width: 100%;
   text-align: center;
 }
+.like-button.loading {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.like-button img {
+  transition: transform 0.2s;
+}
+
+.like-button:active img {
+  transform: scale(1.2);
+}
+
+.no-posts {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+  font-size: 18px;
+}
+
+/* Анимация для лайков */
+.like-button {
+  transition: transform 0.2s;
+}
+
+.like-button:active {
+  transform: scale(1.1);
+}
+
+.like-button img {
+  transition: opacity 0.3s;
+}
+
+/* Состояние загрузки */
+.like-button.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.like-button.loading img {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}

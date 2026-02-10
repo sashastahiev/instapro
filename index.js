@@ -1,6 +1,7 @@
-import { getPosts } from "./api.js";
 import { renderAddPostPageComponent } from "./components/add-post-page-component.js";
 import { renderAuthPageComponent } from "./components/auth-page-component.js";
+import { getPosts, addPost, getUserPosts, likePost, dislikePost } from "./api.js";
+import { renderUserPostsPageComponent } from "./components/user-posts-page-component.js";
 import {
   ADD_POSTS_PAGE,
   AUTH_PAGE,
@@ -19,6 +20,7 @@ import {
 export let user = getUserFromLocalStorage();
 export let page = null;
 export let posts = [];
+export let pageData = null;
 
 const getToken = () => {
   const token = user ? `Bearer ${user.token}` : undefined;
@@ -35,6 +37,8 @@ export const logout = () => {
  * Включает страницу приложения
  */
 export const goToPage = (newPage, data) => {
+  pageData = data; // Сохраняем данные страницы
+  
   if (
     [
       POSTS_PAGE,
@@ -67,12 +71,20 @@ export const goToPage = (newPage, data) => {
     }
 
     if (newPage === USER_POSTS_PAGE) {
-      // @@TODO: реализовать получение постов юзера из API
-      console.log("Открываю страницу пользователя: ", data.userId);
+  page = LOADING_PAGE;
+  renderApp();
+
+  return getUserPosts({ token: getToken(), userId: data.userId })
+    .then((newPosts) => {
       page = USER_POSTS_PAGE;
-      posts = [];
-      return renderApp();
-    }
+      posts = newPosts;
+      renderApp();
+    })
+    .catch((error) => {
+      console.error(error);
+      goToPage(POSTS_PAGE);
+    });
+}
 
     page = newPage;
     renderApp();
@@ -107,15 +119,26 @@ const renderApp = () => {
   }
 
   if (page === ADD_POSTS_PAGE) {
-    return renderAddPostPageComponent({
-      appEl,
-      onAddPostClick({ description, imageUrl }) {
-        // @TODO: реализовать добавление поста в API
-        console.log("Добавляю пост...", { description, imageUrl });
-        goToPage(POSTS_PAGE);
-      },
-    });
-  }
+  return renderAddPostPageComponent({
+    appEl,
+    onAddPostClick({ description, imageUrl }) {
+      // Добавляем пост в API
+      addPost({
+        token: getToken(),
+        description,
+        imageUrl,
+      })
+        .then(() => {
+          // После успешного добавления переходим на страницу постов
+          goToPage(POSTS_PAGE);
+        })
+        .catch((error) => {
+          console.error("Ошибка при добавлении поста:", error);
+          alert(error.message);
+        });
+    },
+  });
+}
 
   if (page === POSTS_PAGE) {
     return renderPostsPageComponent({
@@ -124,10 +147,91 @@ const renderApp = () => {
   }
 
   if (page === USER_POSTS_PAGE) {
-    // @TODO: реализовать страницу с фотографиями отдельного пользвателя
-    appEl.innerHTML = "Здесь будет страница фотографий пользователя";
-    return;
-  }
+  return renderUserPostsPageComponent({
+    appEl,
+    userId: pageData ? pageData.userId : undefined,
+  });
+}
 };
 
 goToPage(POSTS_PAGE);
+
+// функции для работы с лайками:
+export const handleLikeClick = (postId) => {
+
+  const likeButton = event.target.closest('.like-button');
+if (likeButton) {
+  likeButton.classList.add('loading');
+}
+  
+  if (!user) {
+    alert("Чтобы ставить лайки, нужно авторизоваться");
+    goToPage(AUTH_PAGE);
+    return;
+  }
+
+  const postIndex = posts.findIndex(p => p.id === postId);
+  if (postIndex === -1) {
+    console.error("Пост не найден");
+    return;
+  }
+
+  const post = posts[postIndex];
+  
+  // ВАЖНО: проверьте структуру like в ваших данных!
+  // В ваших данных лайк имеет вид: {id: '6421860c32e0301869fb3301', name: 'Админ'}
+  // Значит поле userId отсутствует, используем like.id
+ 
+  
+
+  const isLiked = post.likes && post.likes.some(like => like.id === user._id);
+  
+ 
+
+  const apiCall = isLiked ? dislikePost : likePost;
+  
+  apiCall({
+    token: getToken(),
+    postId,
+  })
+    .then((response) => {
+      
+      
+      // API возвращает объект { post: {...} }, извлекаем пост
+      const updatedPostData = response.post;
+      
+      // Сохраняем данные о пользователе из старого поста
+      if (!updatedPostData.user && post.user) {
+        updatedPostData.user = post.user;
+      }
+      
+      // Обновляем пост в массиве posts
+      posts[postIndex] = updatedPostData;
+      
+      // Перерисовываем текущую страницу
+      const appEl = document.getElementById("app");
+      if (page === POSTS_PAGE) {
+        renderPostsPageComponent({ appEl });
+      } else if (page === USER_POSTS_PAGE) {
+        renderUserPostsPageComponent({
+          appEl,
+          userId: pageData ? pageData.userId : undefined,
+        });
+      }
+      
+    })
+    .finally(() => {
+  if (likeButton) {
+    likeButton.classList.remove('loading');
+  }
+})
+    .catch((error) => {
+      console.error("Ошибка при обработке лайка:", error);
+      alert(`Не удалось поставить лайк: ${error.message}`);
+    })
+    .finally(() => {
+  if (likeButton) {
+    likeButton.classList.remove('loading');
+  }
+});;
+};
