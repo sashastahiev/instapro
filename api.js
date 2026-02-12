@@ -1,14 +1,13 @@
 // Замени на свой, чтобы получить независимый от других набор данных.
 // "боевая" версия инстапро лежит в ключе prod
 
-const personalKey = "alex-kornilov";
+const personalKey = "alex-stahiev";
 const baseHost = "https://webdev-hw-api.vercel.app";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
-
 function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
+  if (!text) return "";
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
@@ -87,18 +86,17 @@ export function addPost({ token, description, imageUrl }) {
       description: escapeHtml(description), // Экранируем перед отправкой
       imageUrl,
     }),
-  })
-    .then((response) => {
-      if (response.status === 401) {
-        throw new Error("Нет авторизации");
-      }
-      
-      if (response.status === 400) {
-        throw new Error("Ошибка при добавлении поста");
-      }
-      
-      return response.json();
-    });
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+
+    if (response.status === 400) {
+      throw new Error("Ошибка при добавлении поста");
+    }
+
+    return response.json();
+  });
 }
 export function getUserPosts({ token, userId }) {
   return fetch(`${postsHost}/user-posts/${userId}`, {
@@ -124,14 +122,13 @@ export function likePost({ token, postId }) {
     headers: {
       Authorization: token,
     },
-  })
-    .then((response) => {
-      if (response.status === 401) {
-        throw new Error("Нет авторизации");
-      }
-      
-      return response.json();
-    });
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+
+    return response.json();
+  });
 }
 
 export function dislikePost({ token, postId }) {
@@ -140,12 +137,11 @@ export function dislikePost({ token, postId }) {
     headers: {
       Authorization: token,
     },
-  })
-    .then((response) => {
-      if (response.status === 401) {
-        throw new Error("Нет авторизации");
-      }
-      
-      return response.json();
-    });
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+
+    return response.json();
+  });
 }
